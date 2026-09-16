@@ -3,3 +3,4 @@ web/**       linguist-vendored
 *.html       linguist-vendored
 *.md         linguist-documentation
 *.sh text eol=lf
+assets/**   linguist-vendored
