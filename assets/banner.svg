@@ -18,11 +18,8 @@
   <text x="74" y="214" font-size="25" letter-spacing="0.5" fill="#D4DEE8">how much did you <tspan fill="#14F195" font-weight="700">fumble?</tspan></text>
   <text x="74" y="240" font-size="14" letter-spacing="0.5" fill="#8A93B0">a second brain for your Solana memecoin trading</text>
   <g><rect x="74" y="252" width="77" height="30" rx="15" fill="rgba(20,241,149,0.06)" stroke="rgba(20,241,149,0.30)"/><text x="113" y="272" text-anchor="middle" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="13" letter-spacing="1.5" fill="#8BFFCB">SOLANA</text></g><g><rect x="163" y="252" width="96" height="30" rx="15" fill="rgba(20,241,149,0.06)" stroke="rgba(20,241,149,0.30)"/><text x="211" y="272" text-anchor="middle" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="13" letter-spacing="1.5" fill="#8BFFCB">ON-CHAIN</text></g><g><rect x="271" y="252" width="132" height="30" rx="15" fill="rgba(20,241,149,0.06)" stroke="rgba(20,241,149,0.30)"/><text x="337" y="272" text-anchor="middle" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="13" letter-spacing="1.5" fill="#8BFFCB">C++ · PYTHON</text></g><g><rect x="415" y="252" width="50" height="30" rx="15" fill="rgba(20,241,149,0.06)" stroke="rgba(20,241,149,0.30)"/><text x="440" y="272" text-anchor="middle" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="13" letter-spacing="1.5" fill="#8BFFCB">MIT</text></g>
-  <!-- candle the moth flies at -->
-  <rect x="1052" y="250" width="14" height="70" rx="2" fill="#182440"/>
-  <rect x="1057" y="214" width="4" height="42" fill="#9945FF" opacity="0.5"/>
-  <ellipse cx="1059" cy="212" rx="9" ry="16" fill="#14F195" opacity="0.85"/>
-  <ellipse cx="1059" cy="214" rx="4" ry="9" fill="#EAFFF5"/>
+  <!-- missed PnL: the ghost curve, you vs a hold to the top -->
+  <text x="905" y="242" font-size="11" letter-spacing="2" fill="#8BFFCB">LEFT ON THE TABLE</text><path d="M905,299 L962,285 L1018,272 L1075,260 L1132,250 L1132,287 L1075,290 L1018,296 L962,295 L905,299 Z" fill="#14F195" opacity="0.10"/><polyline points="905,299 962,285 1018,272 1075,260 1132,250" fill="none" stroke="#9945FF" stroke-width="2.4" stroke-dasharray="5 4" opacity="0.9"/><polyline points="905,299 962,295 1018,296 1075,290 1132,287" fill="none" stroke="#14F195" stroke-width="2.6"/><circle cx="1132" cy="250" r="3.5" fill="#9945FF"/><circle cx="1132" cy="287" r="3.5" fill="#14F195"/><text x="905" y="330" font-size="25" font-weight="800" fill="#14F195">$165,660</text>
   <!-- moth -->
   <g shape-rendering="crispEdges">
 <rect x="984.0" y="84.0" width="9.9" height="9.9" fill="#0B0B16"/>
