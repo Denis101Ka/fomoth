@@ -113,6 +113,8 @@ header{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:c
 .chip i{width:8px;height:8px;border-radius:50%;background:var(--faint);transition:.2s}
 .chip:hover{color:var(--white)}
 .chip.on{border-color:var(--green);color:var(--green);box-shadow:0 0 0 3px rgba(20,241,149,.08)}.chip.on i{background:var(--green);box-shadow:0 0 8px var(--green)}
+.chip .clogo{width:17px;height:17px;flex:none;opacity:.4;filter:grayscale(1);transition:.2s}
+.chip:hover .clogo{opacity:.8;filter:none}.chip.on .clogo{opacity:1;filter:drop-shadow(0 0 5px rgba(20,241,149,.45))}
 .chips-auto{font-size:11px;color:var(--faint);margin-left:6px;letter-spacing:.06em}
 .field button{border:0;cursor:pointer;background:var(--green);color:#050704;font-family:var(--mono);font-weight:800;font-size:14px;letter-spacing:.14em;padding:0 40px;align-self:stretch;transition:.2s;position:relative;overflow:hidden}
 .field button:hover{background:var(--green2)}
@@ -363,8 +365,8 @@ footer{position:relative;z-index:2;border-top:1px solid var(--line);margin-top:v
         keep more of it</u> next time.</p>
       <div class="search">
         <div class="chains"><span class="cl">CHAIN</span>
-          <button class="chip" data-c="sol"><i></i>SOLANA</button>
-          <button class="chip" data-c="rh"><i></i>ROBINHOOD</button>
+          <button class="chip" data-c="sol"><svg class="clogo" viewBox="0 0 24 20" aria-hidden="true"><defs><linearGradient id="solg" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#00FFA3"/><stop offset="1" stop-color="#DC1FFF"/></linearGradient></defs><g fill="url(#solg)"><path d="M4.6 2H22.5L19.4 5.3H1.5Z"/><path d="M1.5 8.35H19.4L22.5 11.65H4.6Z"/><path d="M4.6 14.7H22.5L19.4 18H1.5Z"/></g></svg>SOLANA</button>
+          <button class="chip" data-c="rh"><svg class="clogo" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 2.2C12.6 3 7.3 8.1 5.6 15.2L3.4 21.6 6.1 17.8C13.4 17.2 18.6 11.3 20.5 2.2Z" fill="#00C805"/><path d="M18.2 5 8.2 16.6" stroke="#050704" stroke-width="1.3" stroke-linecap="round"/></svg>ROBINHOOD</button>
           <span class="chips-auto" id="chauto"></span></div>
         <div class="field">
           <span class="pre">WALLET ›</span>
