@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 
 from .api import SolanaTracker
 from .coach import diagnose
+from .verify import SUSPICIOUS_MULT, peak_after
 
 
 @dataclass
@@ -65,6 +66,7 @@ def build(wallet: str, st: SolanaTracker, ath_top: int = 80) -> Report:
     sold = [(m, t) for m, t in tokens.items() if t.get("sold", 0) > 0 and t.get("sold_usd", 0) > 0]
     sold.sort(key=lambda x: x[1]["sold_usd"], reverse=True)
 
+    verify = isinstance(st, SolanaTracker)       # robinhood peaks are read block-exact off the curve already
     for mint, t in sold[:ath_top]:
         avg_sell = t["sold_usd"] / t["sold"]
         ath = st.ath(mint) or {}
@@ -72,6 +74,13 @@ def build(wallet: str, st: SolanaTracker, ath_top: int = 80) -> Report:
         ath_time = ath.get("timestamp", 0) or 0
         last_sell = t.get("last_sell_time", 0) or 0
         after = ath_time > last_sell
+        # a big claimed multiple from the solana provider gets checked against real candles first
+        if verify and after and avg_sell > 0 and ath_price / avg_sell >= SUSPICIOUS_MULT:
+            checked = peak_after("solana", mint, last_sell)
+            if not checked or checked[0] <= avg_sell:
+                after, ath_price = False, min(ath_price, checked[0] if checked else 0.0)
+            elif checked[0] < ath_price:
+                ath_price, ath_time = checked
         left = t["sold"] * max(0.0, ath_price - avg_sell) if after else 0.0
         rep.fumbles.append(Fumble(
             mint=mint, sold_usd=t["sold_usd"], avg_sell=avg_sell, ath_price=ath_price,

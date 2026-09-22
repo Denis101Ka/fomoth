@@ -37,8 +37,9 @@ def _signed(x: int) -> int:
 
 
 class RobinhoodChain:
-    def __init__(self, gt_pace: float = 2.2):
+    def __init__(self, gt_pace: float = 2.2, pace: float = 0.12):
         self.gt_pace = gt_pace
+        self.pace = pace
         self._dec: dict[str, int] = {}
         self._px: dict[str, float] = {}
         self._eth: float | None = None
@@ -53,6 +54,7 @@ class RobinhoodChain:
                                          {"Content-Type": "application/json", "User-Agent": "fomoth/0.2"})
             try:
                 out = json.load(urllib.request.urlopen(req, timeout=60))
+                time.sleep(self.pace)                      # stay under the public rpc's rate limit
                 if isinstance(out, dict) and "error" in out:
                     raise RuntimeError(out["error"].get("message", "rpc error"))
                 return out
@@ -150,11 +152,11 @@ class RobinhoodChain:
         except Exception:
             return ""
 
-    def _peaks_after_exit(self, last_sell: dict, head: int, eth: float) -> dict:
+    def _peaks_after_exit(self, last_sell: dict, head: int, eth: float, avg_sell: dict) -> dict:
         """Highest price each token traded at on its launchpad curve AFTER the wallet's last sell.
 
-        Block-exact: every curve Buy/Sell fill after the exit is priced (quote amount in the curve's
-        own quote token, at that token's dollar price, over tokens moved) and the maximum is kept.
+        Block-exact and unit-free: the best curve fill after the exit is compared with the curve fill the
+        wallet itself sold into, in the curve's own quote units, so no quote-token price can distort it.
         """
         if not last_sell:
             return {}
@@ -175,51 +177,36 @@ class RobinhoodChain:
             chunk = curves[i:i + 20]
             lo = min(last_sell[by_curve[c]] for c in chunk)
             try:
-                got = self._logs([[CURVE_BUY, CURVE_SELL]], lo + 1, head, address=chunk)
+                got = self._logs([[CURVE_BUY, CURVE_SELL]], lo, head, address=chunk)
             except Exception:
                 got = []
             for lg in got:
                 c = lg["address"].lower()
                 m = by_curve.get(c)
-                if m and int(lg["blockNumber"], 16) > last_sell[m]:
+                if m and int(lg["blockNumber"], 16) >= last_sell[m]:
                     fills.setdefault(c, []).append(lg)
-        need = [(c, next((f for f in fs if f["topics"][0] == CURVE_BUY), None)) for c, fs in fills.items()]
-        need = [(c, f) for c, f in need if f]
-        quote_of: dict = {}
-        rcs = self._batch([("eth_getTransactionReceipt", [f["transactionHash"]]) for c, f in need])
-        for (c, f), rc in zip(need, rcs):
-            quote_of[c] = next((x["address"].lower() for x in (rc or {}).get("logs", [])
-                                if x["topics"][0] == TRANSFER and len(x["topics"]) == 3
-                                and x["topics"][2] == _pad(c) and x["address"].lower() != by_curve[c]), None)
-        qts = sorted({q for q in quote_of.values() if q})
-        todo = [q for q in qts if q not in self._dec]
-        for q, r in zip(todo, self._batch([("eth_call", [{"to": q, "data": "0x313ce567"}, "latest"]) for q in todo])):
-            try:
-                self._dec[q] = int(r, 16) if r and r != "0x" else 18
-            except Exception:
-                self._dec[q] = 18
-        qpx = self.prices(qts) if qts else {}
+        # the multiple is measured in the curve's own units, the price ratio of the best fill after the
+        # exit over the fill the wallet sold into. no quote token, no dollar price, nothing to mis-price:
+        # the dollar peak is then the wallet's own average sell times that multiple
         peaks = {}
         for c, fs in fills.items():
-            q = quote_of.get(c)
-            unit_px, unit_dec = (qpx.get(q, 0.0), self._dec.get(q, 18)) if q else (eth, 18)
-            if not unit_px:
-                continue
-            best, best_blk = 0.0, 0
+            m = by_curve[c]
+            exit_r, best, best_blk = 0.0, 0.0, 0
             for lg in fs:
                 d = lg["data"][2:]
                 w0, w1 = int(d[0:64] or "0", 16), int(d[64:128] or "0", 16)
-                quote, tok = (w0, w1) if lg["topics"][0] == CURVE_BUY else (w1, w0)
-                if tok < 10 ** 21:
+                is_buy = lg["topics"][0] == CURVE_BUY
+                quote, tok = (w0, w1) if is_buy else (w1, w0)
+                if tok < 10 ** 21 or quote <= 0:
                     continue                                   # under 1,000 tokens: dust, no price signal
-                usd = quote / 10 ** unit_dec * unit_px
-                if usd < 1:
-                    continue
-                pr = usd / (tok / 1e18)
-                if pr > best:
-                    best, best_blk = pr, int(lg["blockNumber"], 16)
-            if best > 0:
-                peaks[by_curve[c]] = {"highest_price": best, "timestamp": self._ts_of(best_blk)}
+                r = quote / tok
+                blk = int(lg["blockNumber"], 16)
+                if blk == last_sell[m] and not is_buy:
+                    exit_r = max(exit_r, r)                    # the wallet's own exit fill
+                elif blk > last_sell[m] and r > best:
+                    best, best_blk = r, blk
+            if exit_r > 0 and best > exit_r and avg_sell.get(m):
+                peaks[m] = {"highest_price": avg_sell[m] * best / exit_r, "timestamp": self._ts_of(best_blk)}
         return peaks
 
     def ath(self, mint: str) -> dict | None:
@@ -371,7 +358,8 @@ class RobinhoodChain:
                 losses += p["realized"] < 0
         self._ts_of = ts_of
         top = sorted(last_sell_blk, key=lambda m: -per[m]["sold_usd"])[:60]
-        self._peaks = self._peaks_after_exit({m: last_sell_blk[m] for m in top}, head, eth)
+        avg = {m: per[m]["sold_usd"] / per[m]["sold"] for m in top if per[m]["sold"] > 0}
+        self._peaks = self._peaks_after_exit({m: last_sell_blk[m] for m in top}, head, eth, avg)
         return {"tokens": per, "summary": {
             "realized": realized_total, "totalInvested": invested, "totalWins": wins, "totalLosses": losses,
             "winPercentage": wins / (wins + losses) * 100 if wins + losses else 0.0}}
