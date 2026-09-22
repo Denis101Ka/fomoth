@@ -99,7 +99,7 @@ def diagnose(tokens: dict, summary: dict, total_fumble: float, examples: list, n
             "detail": (
                 f"Take ${e['sym']} : you sold {toks(e['sold_tokens'])} tokens at {price(e['avg_sell'])} "
                 f"and walked with {usd(e['sold_usd'])}. It topped {price(e['ath_price'])} about "
-                f"{e['days_to_peak']:.0f} days later, a {e['peak_mult']:.0f}x. {flip}"
+                f"{dur(e['days_to_peak'] * 1440)} later, a {e['peak_mult']:.0f}x. {flip}"
                 f"A 40% trailing stop off that peak would have closed near {usd(e['trail_value'])}, "
                 f"{usd(gain)} more on that one trade. Make it a rule on every position: sell your "
                 f"original cost the moment it doubles, then trail the remainder 35 to 40 percent off "

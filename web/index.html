@@ -107,6 +107,13 @@ header{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:c
 .field .pre{padding:0 18px;color:var(--amber);font-weight:700;font-size:14px;letter-spacing:.04em;white-space:nowrap}
 .field input{flex:1;background:none;border:0;color:var(--white);font-family:var(--mono);font-size:15px;padding:20px 8px;outline:none}
 .field input::placeholder{color:var(--faint)}
+.chains{display:flex;gap:8px;margin-bottom:10px;align-items:center}
+.chains .cl{font-size:11px;letter-spacing:.2em;color:var(--faint);margin-right:6px}
+.chip{border:1px solid var(--line);background:var(--bg2);color:var(--dim);font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.14em;padding:8px 16px;border-radius:8px;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:8px}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--faint);transition:.2s}
+.chip:hover{color:var(--white)}
+.chip.on{border-color:var(--green);color:var(--green);box-shadow:0 0 0 3px rgba(20,241,149,.08)}.chip.on i{background:var(--green);box-shadow:0 0 8px var(--green)}
+.chips-auto{font-size:11px;color:var(--faint);margin-left:6px;letter-spacing:.06em}
 .field button{border:0;cursor:pointer;background:var(--green);color:#050704;font-family:var(--mono);font-weight:800;font-size:14px;letter-spacing:.14em;padding:0 40px;align-self:stretch;transition:.2s;position:relative;overflow:hidden}
 .field button:hover{background:var(--green2)}
 .field button::after{content:"";position:absolute;inset:0;transform:translateX(-120%);background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);animation:shine 3.6s ease-in-out infinite}
@@ -355,6 +362,10 @@ footer{position:relative;z-index:2;border-top:1px solid var(--line);margin-top:v
         nobody else computes for you: <b>the money you left on the table</b>, and <u>exactly how to
         keep more of it</u> next time.</p>
       <div class="search">
+        <div class="chains"><span class="cl">CHAIN</span>
+          <button class="chip" data-c="sol"><i></i>SOLANA</button>
+          <button class="chip" data-c="rh"><i></i>ROBINHOOD</button>
+          <span class="chips-auto" id="chauto"></span></div>
         <div class="field">
           <span class="pre">WALLET ›</span>
           <input id="w" placeholder="paste your Solana address…" autocomplete="off" spellcheck="false">
@@ -569,6 +580,7 @@ footer{position:relative;z-index:2;border-top:1px solid var(--line);margin-top:v
   </svg>
 </div>
 
+<script>var PAGE_CHAIN=(function(){var q=new URLSearchParams(location.search);var c=(q.get('chain')||'').toLowerCase();if(c==='rh'||c==='robinhood')return 'rh';if(c==='sol'||c==='solana')return 'sol';return /^0x[0-9a-fA-F]{40}$/.test(q.get('wallet')||'')?'rh':'sol';})();</script>
 <script>
 var STILL=new URLSearchParams(location.search).get('still')==='1';
 
@@ -820,10 +832,10 @@ function drawChart(curve){var cv=document.getElementById('chart'),dpr=devicePixe
 async function run(w){
   document.getElementById('err').style.display='none';document.getElementById('out').style.display='none';
   var _l=document.getElementById('landing');if(_l)_l.style.display='none';document.getElementById('load').style.display='block';
-  var msgs=['scanning signatures…','decoding swaps…','pricing the peaks…','counting the fumble…'];var mi=0;
+  var msgs=PAGE_CHAIN==='rh'?['reading transfers off robinhood chain…','decoding curve and pool trades…','pricing the peaks…','counting the fumble…','big wallets take a minute or two…']:['scanning signatures…','decoding swaps…','pricing the peaks…','counting the fumble…'];var mi=0;
   var lt=setInterval(function(){document.getElementById('loadp').textContent=msgs[mi++%msgs.length];},700);
   try{
-    var r=await fetch('/api/report?wallet='+encodeURIComponent(w));var d=await r.json();clearInterval(lt);
+    var r=await fetch('/api/report?chain='+PAGE_CHAIN+'&wallet='+encodeURIComponent(w));var d=await r.json();clearInterval(lt);
     if(d.error)throw new Error(d.error);
     document.getElementById('load').style.display='none';document.getElementById('out').style.display='block';
     countUp(document.getElementById('fumble'),d.total_fumble,usd,1500);
@@ -850,7 +862,7 @@ async function run(w){
         '<span class="exmult">'+Math.round(e.peak_mult)+'x</span>'+
         '<span class="exleft">'+usd(e.left_on_table)+'</span></div>'+
         '<div class="exline">sold <b>'+toks(e.sold_tokens)+'</b> at <b>'+price(e.avg_sell)+'</b> for <b>'+usd(e.sold_usd)+'</b>'+
-        ' · topped <b>'+price(e.ath_price)+'</b> ~'+Math.round(e.days_to_peak)+'d later</div>'+
+        ' · topped <b>'+price(e.ath_price)+'</b> '+dur(e.days_to_peak*1440)+' later</div>'+
         '<div class="exrule">a 40% trailing stop banks <b>'+usd(e.trail_value)+'</b> here → <b class="g">+'+usd(gain)+'</b> instead of '+usd(e.sold_usd)+'</div></div>';
     }).join('');
     document.getElementById('recs').innerHTML=(c.recommendations||[]).map(function(rc,i){return '<div class="rec"><div class="top"><span class="num">'+(i+1)+'</span><span class="name">'+rc.title+'</span>'+(rc.impact>0?'<span class="imp">+'+usd(rc.impact)+'</span>':'')+'</div><div class="dt">'+rc.detail+'</div></div>';}).join('');
@@ -859,9 +871,22 @@ async function run(w){
     document.getElementById('out').scrollIntoView({behavior:'smooth',block:'start'});
   }catch(e){clearInterval(lt);document.getElementById('load').style.display='none';var el=document.getElementById('err');el.textContent='could not read that wallet: '+e.message;el.style.display='block';}
 }
-document.getElementById('go').onclick=function(){var w=document.getElementById('w').value.trim();if(w)run(w);};
+/* chain switch: solana or robinhood chain. the page reloads into the chosen skin, the report runs in it */
+var SEL=PAGE_CHAIN;
+function detect(w){return /^0x[0-9a-fA-F]{40}$/.test(w)?'rh':/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(w)?'sol':null;}
+function paint(){document.querySelectorAll('.chip').forEach(function(c){c.classList.toggle('on',c.dataset.c===SEL);});}
+function go(w,c){if(c!==PAGE_CHAIN){location.href='/?chain='+c+(w?'&wallet='+encodeURIComponent(w):'');return;}
+  history.replaceState(null,'','/?chain='+c+'&wallet='+encodeURIComponent(w));run(w);}
+document.querySelectorAll('.chip').forEach(function(c){c.onclick=function(e){e.preventDefault();var w=document.getElementById('w').value.trim();
+  SEL=c.dataset.c;paint();if(!w)go('',SEL);else if(detect(w)&&detect(w)!==SEL){document.getElementById('chauto').textContent='that address looks like '+(detect(w)==='rh'?'robinhood chain':'solana');}};});
+document.getElementById('w').addEventListener('input',function(){var d=detect(this.value.trim());var a=document.getElementById('chauto');
+  if(d){SEL=d;paint();a.textContent='auto-detected · '+(d==='rh'?'robinhood chain':'solana');}else a.textContent='';});
+paint();
+document.getElementById('go').onclick=function(){var w=document.getElementById('w').value.trim();if(!w)return;var d=detect(w);
+  if(!d){var el=document.getElementById('err');el.textContent='that does not look like a solana or robinhood chain address';el.style.display='block';return;}
+  go(w,d);};
 document.getElementById('w').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('go').click();});
-var q=new URLSearchParams(location.search).get('wallet');if(q){document.getElementById('w').value=q;run(q);}
+var q=new URLSearchParams(location.search).get('wallet');if(q){document.getElementById('w').value=q;if(detect(q)){SEL=detect(q);paint();}run(q);}
 </script>
 </body>
 </html>

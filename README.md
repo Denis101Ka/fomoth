@@ -4,7 +4,7 @@
 
 # FOMOTH
 
-**A second brain for your Solana memecoin trading. Paste a wallet, see what you fumbled.**
+**A second brain for your memecoin trading on Solana and Robinhood Chain. Paste a wallet, see what you fumbled.**
 
 ![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-14F195?style=flat-square)
 ![C++17](https://img.shields.io/badge/C%2B%2B-17-9945FF?style=flat-square)
@@ -56,6 +56,24 @@ usable on its own and easy to test:
 printf '1\nTKN 3 2\n0 2 1\n86400 10 3\n172800 5 4\n0 100\n172800 50\n' | ./build/core/fumble
 # {"total_fumble":950,"priced":1,"tokens":[{"mint":"TKN","sold_tokens":150,"fumble_usd":950,"peak_mult":1.25,...}]}
 ```
+
+## Robinhood Chain
+
+Paste a `0x…` address, or flip the chain switch above the input, and the same report runs on
+Robinhood Chain (chain id 4663) in a Robinhood-green skin. There is no wallet-PnL provider for this
+chain, so `fomoth/robinhood.py` reads it directly from the public RPC:
+
+- **Trades.** Every ERC-20 transfer into or out of the wallet, grouped by transaction. A token worth
+  $0.50 or more per unit (USDG, tokenized stocks, WETH) is money; anything cheaper is the memecoin.
+  Bot routes hop ETH → WETH → a quote token → the launchpad curve and net to zero on the wallet, so a
+  trade is priced by its largest money leg, and native-ETH payouts are read off the curve or
+  Uniswap v4 event.
+- **The peak after your exit.** Block-exact: every launchpad curve fill after your last sell is
+  priced in the curve's own quote token, and the maximum is the peak you missed. GeckoTerminal
+  candles are only a small fallback for tokens that graduated to a pool.
+- **Caveats.** Dollar values use today's price of the quote token (USDG is a dollar and stock
+  tokens move slowly). The first report for a wallet takes a minute or two on the public RPC, then
+  it is cached.
 
 ## The fumble, precisely
 

@@ -48,7 +48,7 @@ class Report:
 def build(wallet: str, st: SolanaTracker, ath_top: int = 80) -> Report:
     pnl = st.pnl(wallet)
     if not pnl or not pnl.get("tokens"):
-        raise RuntimeError("the data provider is slow right now, try again in a moment")
+        raise RuntimeError("no trades found for this wallet, or the data source is slow. try again in a moment")
     tokens = pnl.get("tokens", {})
     s = pnl.get("summary", {})
     rep = Report(
